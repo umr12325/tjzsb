@@ -1,5 +1,5 @@
 
-const CACHE = 'tjzsb-1795760927086';
+const CACHE = 'tjzsb-1795761602931';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); }));
@@ -14,11 +14,16 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(e.request.url);
   var isPage = e.request.mode === 'navigate' || url.pathname.slice(-1) === '/' || url.pathname.indexOf('index.html') >= 0;
   if (isPage) {
-    e.respondWith(fetch(e.request, { cache: 'no-store' }).then(function (resp) {
-      var cp = resp.clone();
-      caches.open(CACHE).then(function (c) { c.put('./index.html', cp); });
-      return resp;
-    }).catch(function () { return caches.match('./index.html'); }));
+    e.respondWith(caches.open(CACHE).then(function (c) {
+      return c.match('./index.html').then(function (cached) {
+        var net = fetch(e.request, { cache: 'no-store' }).then(function (resp) {
+          c.put('./index.html', resp.clone());
+          return resp;
+        });
+        e.waitUntil(net.catch(function () {}));
+        return cached || net;
+      });
+    }));
     return;
   }
   e.respondWith(caches.match(e.request).then(function (r) {
