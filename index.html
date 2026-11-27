@@ -9516,8 +9516,15 @@ window.MATERIALS = {
 
 <script>
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  var hadSW = !!navigator.serviceWorker.controller;
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js').catch(function () {});
+    navigator.serviceWorker.register('./sw.js').then(function (reg) {
+      reg.update();
+      setInterval(function () { reg.update(); }, 3600000);
+    }).catch(function () {});
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (hadSW) location.reload();
   });
 }
 </script>
